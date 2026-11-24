@@ -1028,3 +1028,33 @@ test('analyzeActiveConversation skips 0-token generatorMetadata startup stubs fr
   assert.equal(info.turnDetails[1].turn, 2);
   assert.equal(info.turnDetails[1].inProgress, true, 'Turn 2 with active thinking step (status=1) must have inProgress=true');
 });
+
+test('computeRingTelemetry dual mode and evaluateCostGuard detect draft/turn spikes accurately', () => {
+  const dualTel = usageCore.computeRingTelemetry({
+    activeInfo: { contextUsed: 51200, maxContextTokens: 256000 },
+    quotaInfo: { effectiveRemainingPct: 18 },
+    ringMode: 'dual',
+  });
+  assert.equal(dualTel.mode, 'dual');
+  assert.equal(dualTel.contextPctRound, 80);
+  assert.equal(dualTel.quotaPctRound, 18);
+  assert.equal(dualTel.pctRound, 18, 'Dual ring urgency tracks the lower of context or quota remaining');
+  assert.equal(dualTel.level, 'warn');
+
+  const calm = usageCore.evaluateCostGuard({
+    draftTokens: 800,
+    activeInfo: { turnDetails: [{ turn: 1, ctxDelta: 3200 }] },
+  });
+  assert.equal(calm.active, false);
+
+  const spiked = usageCore.evaluateCostGuard({
+    draftTokens: 5200,
+    activeInfo: { turnDetails: [{ turn: 3, ctxDelta: 21000 }] },
+  });
+  assert.equal(spiked.active, true);
+  assert.equal(spiked.kind, 'both');
+  assert.equal(spiked.hasDraftWarn, true);
+  assert.equal(spiked.hasSpikeWarn, true);
+  assert.equal(spiked.spikeTurn, 3);
+  assert.equal(spiked.spikeTokens, 21000);
+});

@@ -2,27 +2,46 @@
 
 <img src="assets/clawd-banner.svg" alt="AGY Claude Style — Clawd Mascot Banner" width="880" />
 
-# 🦀✨ AGY Claude Style (`agy-claude-style`)
+# 🦀🌠 AGY Claude Style · Focus & Starlight Edition (`agy-claude-style-focus`)
 
-**让会眨眼、会摸鱼、还能被挠痒痒的像素小螃蟹 `Clawd` 陪你在 Google Antigravity 里写代码** `(๑•̀ㅂ•́)و✧`
+**深潜专注流、双同心算力守卫，再加一颗带像素小螃蟹 `Clawd` 御风滑翔的许愿流星** `(๑•̀ㅂ•́)و✧`
 
-为 **Google Antigravity**（Windows / macOS / Linux）打造的一体化界面重塑、多语言本地化与 Token HUD 遥测增强插件。<br/>
-基于 Antigravity 内置 **Chrome DevTools Protocol（CDP）** 调试端口实现无损动态注入——**不改动任何原版安装文件**，支持热更新与一键无痕退潮还原 🌊
+为 **Google Antigravity**（Windows / macOS / Linux）打造的一体化专注生产力、界面重塑、多语言本地化与 Token 成本守卫增强插件。<br/>
+基于 Antigravity 内置 **Chrome DevTools Protocol（CDP）** 调试端口无损动态注入——**零修改原版安装文件**，平时 0 后台进程常驻，支持一键无痕还原 🌊
+
+> [!IMPORTANT]
+> ### 📖 作品简介（二开背景与核心升级）
+> 1. **解决什么问题**：在高强度使用 AI Agent 处理长工程任务时，存在三大痛点——① 满屏动态装饰在需要深度思考时容易分散注意力，但逐项进设置开关极其繁琐；② 右下角单圆环无法同时盯住「当前对话上下文」与「账号模型总配额」，粘贴长日志或单轮工具输出暴增时极易不知不觉烧空额度；③ 桌面吉祥物长期固定在原地缺少惊喜互动。
+> 2. **怎么发现这个问题**：在日常使用 Antigravity `2.34.0` 与上游开源主题 `agy-claude-style` 完成多轮复杂代码与建模脚本工程时，频繁遇到切换专注状态繁琐、长上下文突增未察觉导致配额骤降的真实痛点。
+> 3. **怎么解决的**：基于上游 [0DNANCY/agy-claude-style](https://github.com/0DNANCY/agy-claude-style)（MIT 协议）进行模块化二次开发，新增独立引擎 `focus-core.js` 与成本守门员——实现**一键深潜专注模式（`Alt+Shift+F`）**、**25/45 分钟番茄冲刺计时胶囊（达成时召唤金色流星庆典）**、**闲时流星接小螃蟹抛物星轨滑翔与空中点击许愿彩蛋（`Alt+Shift+M`）**、**外环上下文 + 内环配额双同心圆环（`dual`）**以及**大草稿（≥4k tok）/ 单轮暴增（≥15k tok）防烧钱预警条**，并补齐 5 语言词条与自动化单元测试。
 
 <p>
-  <a href="#clawd-饲养指南"><img src="https://img.shields.io/badge/Clawd_Mascot-19_Animations-D97757?style=flat-square" alt="Clawd Mascot: 19 Animations" /></a>
-  <a href="#快速开始"><img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-4D6BFE?style=flat-square" alt="Platform: Windows | macOS | Linux" /></a>
-  <a href="#核心特性"><img src="https://img.shields.io/badge/i18n-5_Languages-E2A45F?style=flat-square" alt="i18n: 5 Languages" /></a>
+  <a href="#星轨御风与深潜专注"><img src="https://img.shields.io/badge/Focus_%26_Meteor-v2.2.0-38BDF8?style=flat-square" alt="Focus & Meteor v2.2.0" /></a>
+  <a href="#clawd-饲养指南"><img src="https://img.shields.io/badge/Clawd_Mascot-Starlight_Ride-D97757?style=flat-square" alt="Clawd Mascot: Starlight Ride" /></a>
   <a href="#环境要求"><img src="https://img.shields.io/badge/Zero--Mod-CDP_Live_Inject-63C59A?style=flat-square" alt="Zero-Mod: CDP Live Inject" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-8FA4FF?style=flat-square" alt="License: MIT" /></a>
 </p>
 
-[✨ 核心特性](#核心特性) · [🦀 Clawd 饲养指南](#clawd-饲养指南) · [🔄 运行模式](#运行模式对比) · [🚀 马上领养](#快速开始) · [⚙️ 配置调教](#配置说明) · [🗂️ 项目结构](#项目结构) · [💌 来源声明](#来源声明)
+[🌠 二开新增亮点](#星轨御风与深潜专注) · [✨ 核心特性](#核心特性) · [🦀 Clawd 饲养指南](#clawd-饲养指南) · [🔄 运行模式](#运行模式对比) · [🚀 快速开始](#快速开始) · [💌 来源声明](#来源声明)
 
 </div>
 
 > [!NOTE]
-> **来源声明**：本项目灵感及部分源码来源于 [Nwflower/dsh-claude-style](https://github.com/Nwflower/dsh-claude-style)；Codex 思考强度滑杆样式来源于 [Microqian2th/dsh-codex-effort-slider](https://github.com/Microqian2th/dsh-codex-effort-slider)；梁武峰思考强度滑杆样式来源于 [mobius/dsh-performance-slider](https://github.com/mobius/dsh-performance-slider)。详见 [来源声明](#来源声明)。
+> **开源致谢与版权溯源**：本仓库基于 [0DNANCY/agy-claude-style](https://github.com/0DNANCY/agy-claude-style)（MIT License）二次开发并保留完整提交历史与上游版权声明；上游灵感及部分源码来源于 [Nwflower/dsh-claude-style](https://github.com/Nwflower/dsh-claude-style)、[Microqian2th/dsh-codex-effort-slider](https://github.com/Microqian2th/dsh-codex-effort-slider) 与 [mobius/dsh-performance-slider](https://github.com/mobius/dsh-performance-slider)。
+
+---
+
+<a id="星轨御风与深潜专注"></a>
+## 🌠 Focus & Starlight 二开新增亮点（v2.2.0）
+
+| 新增能力 | 快捷键 / 入口 | 体验说明 |
+| --- | --- | --- |
+| **🌠 小螃蟹流星御风巡游 & 许愿彩蛋** | `Alt+Shift+M` 或 `Shift+单击小螃蟹` | 闲置未打字（≥45s）且未开专注模式时，流星从输入框侧翼俯冲接起 `Clawd` 沿抛物星轨滑翔一圈；**飞行途中点击小螃蟹/流星可触发「✦ 许愿成功」星尘彩蛋**！ |
+| **🧘 深潜专注模式（ADHD 友好抗干扰）** | `Alt+Shift+F` | 一键隐藏首页字符波纹与对话轮次徽章，小螃蟹自动戴上小耳机安静陪伴并**强制暂停自动流星飞行**，退出即恢复原状。 |
+| **🍅 番茄冲刺计时胶囊 & 金色庆典流星** | `Alt+Shift+P` / 底栏胶囊 | 输入框底栏内嵌 `25:00` / `45:00` 倒计时胶囊（左键启停、右键重置）；冲刺结束瞬间召唤**专属金色庆典流星**带着小螃蟹撒花巡游提醒休息 2 分钟。 |
+| **◎ 双同心剩余容量圆环 (`dual`)** | 默认启用（可在设置切换） | 右下角圆环升级为**外环（当前上下文余量）+ 内环（模型总配额余量）**同屏双显，点击智能直达更紧迫的监控面板。 |
+| **⚡ 大草稿与单轮暴增守门员 (`costGuard`)** | 自动监测 | 输入草稿预估 `≥ 4,000 tok` 或上轮工具调用暴增 `≥ 15,000 tok` 时弹出琥珀色预警条，支持一键填入 `/compact` 压缩上下文。 |
+| **📊 遥测浮窗免鼠标瞬开** | `Alt+Shift+T` | 无需伸手瞄准右下角圆环，键盘一键呼出 / 收起 4 标签页 Token 深度遥测面板。 |
 
 ---
 

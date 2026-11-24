@@ -54,6 +54,7 @@
   const usageCore = globalThis.__agCsUsageCore;
   const rippleCore = globalThis.__agCsRippleCore;
   const mascotCore = globalThis.__agCsMascotCore;
+  const focusCore = globalThis.__agCsFocusCore;
   const crabAssets = globalThis.__agCsCrabAssets;
   const effortCore = globalThis.__agCsEffortCore;
   const perfAssets = globalThis.__agCsPerfAssets;
@@ -110,6 +111,24 @@
   let runtimeInitConfig = { ...initialConfig };
   let cfg = loadSettings(runtimeInitConfig);
   let destroyed = false;
+
+  const sprintTimer = focusCore
+    ? focusCore.createSprintTimer(parseInt(cfg.sprintMinutes, 10) || 25)
+    : null;
+  let sprintTickInterval = null;
+  const dismissedCostGuardSigs = new Set();
+  const meteorState = {
+    flight: null,
+    stageEl: null,
+    bodyEl: null,
+    rafId: 0,
+    stepTimer: null,
+    toastTimer: null,
+    lastTypingAt: 0,
+    nextAutoAt: focusCore
+      ? Date.now() + focusCore.computeNextMeteorCooldownMs(Math.random)
+      : Date.now() + 240000,
+  };
 
   function saveSetting(key, value) {
     cfg[key] = value;
@@ -200,6 +219,14 @@
     html.setAttribute('data-ag-cs-sidebar-compact', cfg.sidebarCompact === true ? 'on' : 'off');
     html.setAttribute('data-ag-cs-hud-compact', cfg.hudCompact === true ? 'on' : 'off');
     html.setAttribute('data-ag-cs-effort-accent', cfg.effortAccent === false ? 'off' : 'on');
+    if (cfg.focusMode === true) {
+      html.setAttribute('data-ag-cs-focus', '1');
+    } else {
+      html.removeAttribute('data-ag-cs-focus');
+    }
+    if (sprintTimer && cfg.sprintMinutes && cfg.sprintMinutes !== 'off') {
+      sprintTimer.setDurationMinutes(parseInt(cfg.sprintMinutes, 10) || 25);
+    }
     html.setAttribute('data-ag-cs-lang', lang);
     const isCjk = i18nCore && typeof i18nCore.isCjkLanguage === 'function' ? i18nCore.isCjkLanguage(lang) : isZh();
     if (isCjk) html.setAttribute('data-ag-cs-cjk', '1');
@@ -2503,11 +2530,16 @@
       crabState.stage.current.done = true;
       mascotCore.finishStage(crabState.stage, crabState.stage.current.key, now, Math.random);
     }
-    const next = mascotCore.decideStage(crabState.stage, now, crabState.stage.level, {
+    const focusQuiet = Boolean(cfg.focusMode);
+    const rawNext = mascotCore.decideStage(crabState.stage, now, crabState.stage.level, {
       extras: mascotCore.CRAB_EXTRAS,
-      extrasAllowed: !motionReduced() && !document.hidden,
+      extrasAllowed: !focusQuiet && !motionReduced() && !document.hidden,
       random: Math.random,
     });
+    const next =
+      focusQuiet && rawNext.key === 'idle' && crabAssets.CRAB_SHEETS.music
+        ? { ...rawNext, key: 'music' }
+        : rawNext;
     const switching =
       !crabState.stage.current ||
       next.key !== crabState.stage.current.key ||
@@ -2574,6 +2606,14 @@
         return;
       }
       if (!allowPoke) return;
+      if (meteorState.flight) {
+        triggerCrabMeteorWish();
+        return;
+      }
+      if (ev.shiftKey && cfg.meteorRide !== 'off') {
+        launchMeteorRide('cruise');
+        return;
+      }
       const now = Date.now();
       if (crabState.stage.clicks.length > 0 && now - crabState.stage.clicks[crabState.stage.clicks.length - 1] > 450) {
         crabState.stage.clicks = [];
@@ -2597,7 +2637,145 @@
     return { root, sprite, strip };
   }
 
+  function showComposerWishToast(text) {
+    const anchor =
+      crabState.anchor ||
+      document.querySelector('[data-testid="agent-input-box"] .surface-composer-card');
+    if (!anchor) return;
+    anchor.querySelectorAll('.ag-cs-wish-toast').forEach((n) => n.remove());
+    if (meteorState.toastTimer) clearTimeout(meteorState.toastTimer);
+    const toast = document.createElement('div');
+    toast.className = 'ag-cs-wish-toast';
+    toast.setAttribute('data-ag-no-i18n', '');
+    toast.textContent = text;
+    anchor.appendChild(toast);
+    meteorState.toastTimer = setTimeout(() => {
+      meteorState.toastTimer = null;
+      if (toast.parentElement) toast.remove();
+    }, 2300);
+  }
+
+  function stopMeteorRide() {
+    if (meteorState.rafId && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(meteorState.rafId);
+    }
+    meteorState.rafId = 0;
+    if (meteorState.stepTimer) {
+      clearTimeout(meteorState.stepTimer);
+      meteorState.stepTimer = null;
+    }
+    meteorState.flight = null;
+    if (meteorState.stageEl && meteorState.stageEl.parentElement) {
+      meteorState.stageEl.remove();
+    }
+    meteorState.stageEl = null;
+    meteorState.bodyEl = null;
+    if (crabState.root) {
+      crabState.root.removeAttribute('data-ag-cs-riding');
+      crabState.root.style.removeProperty('transform');
+    }
+  }
+
+  function triggerCrabMeteorWish() {
+    if (!focusCore || !meteorState.flight) return false;
+    const ok = focusCore.triggerMeteorWish(meteorState.flight, Date.now());
+    if (!ok) return false;
+    const ui = uiText(getLang());
+    showComposerWishToast(ui.wishGrantedToast || '✦ Wish Granted! Flow Unlocked ✦');
+    if (crabState.stage) {
+      crabState.stage.reaction = { key: 'tickle', mode: 'once', fresh: true };
+      stepCrab();
+    }
+    return true;
+  }
+
+  function stepMeteorFrame() {
+    if (destroyed || !focusCore || !meteorState.flight || !crabState.root || !crabState.anchor) {
+      stopMeteorRide();
+      return;
+    }
+    const now = Date.now();
+    const fl = meteorState.flight;
+    const rawProg = (now - fl.startedAt) / fl.durationMs;
+    if (rawProg >= 1) {
+      stopMeteorRide();
+      crabState.stage.reaction = { key: 'happy', mode: 'once', fresh: true };
+      stepCrab();
+      return;
+    }
+    const sample = focusCore.sampleMeteorTrajectory(rawProg, { spanX: fl.spanX, liftY: fl.liftY });
+    if (meteorState.bodyEl) {
+      meteorState.bodyEl.style.setProperty(
+        'transform',
+        `translate(${sample.meteorDx}px, ${sample.meteorDy}px) rotate(${sample.angleDeg}deg)`
+      );
+      meteorState.bodyEl.style.setProperty('opacity', String(sample.meteorOpacity));
+    }
+    if (sample.riding) {
+      crabState.root.setAttribute('data-ag-cs-riding', '1');
+      crabState.root.style.setProperty('transform', `translate(${sample.crabDx}px, ${sample.crabDy}px)`);
+      if (!fl.wished && (!crabState.stage.reaction || crabState.stage.reaction.key !== 'happy')) {
+        crabState.stage.reaction = { key: 'happy', mode: 'loop', fresh: true };
+        stepCrab();
+      }
+    } else {
+      crabState.root.removeAttribute('data-ag-cs-riding');
+      if (sample.crabDy !== 0 || sample.crabDx !== 0) {
+        crabState.root.style.setProperty('transform', `translate(${sample.crabDx}px, ${sample.crabDy}px)`);
+      } else {
+        crabState.root.style.removeProperty('transform');
+      }
+    }
+    if (typeof requestAnimationFrame === 'function') {
+      meteorState.rafId = requestAnimationFrame(stepMeteorFrame);
+    } else {
+      meteorState.stepTimer = setTimeout(stepMeteorFrame, 48);
+    }
+  }
+
+  function launchMeteorRide(kind = 'cruise') {
+    if (destroyed || !focusCore || cfg.mascot !== 'crab' || cfg.meteorRide === 'off') return false;
+    if (!crabState.root || !crabState.anchor) return false;
+    if (motionReduced()) return false;
+    stopMeteorRide();
+    const rect = typeof crabState.anchor.getBoundingClientRect === 'function'
+      ? crabState.anchor.getBoundingClientRect()
+      : { width: 420 };
+    const spanX = Math.max(160, Math.min(460, (rect.width || 420) - 80));
+    const now = Date.now();
+    meteorState.flight = focusCore.createMeteorFlight({ now, kind, spanX, liftY: 62 });
+    meteorState.nextAutoAt = now + focusCore.computeNextMeteorCooldownMs(Math.random);
+
+    const stage = document.createElement('div');
+    stage.className = 'ag-cs-meteor-stage';
+    stage.setAttribute('data-ag-no-i18n', '');
+    stage.setAttribute('data-meteor-kind', meteorState.flight.kind);
+    const body = document.createElement('div');
+    body.className = 'ag-cs-meteor-body';
+    const tail = document.createElement('span');
+    tail.className = 'ag-cs-meteor-tail';
+    const core = document.createElement('span');
+    core.className = 'ag-cs-meteor-core';
+    body.appendChild(tail);
+    body.appendChild(core);
+    body.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      triggerCrabMeteorWish();
+    });
+    stage.appendChild(body);
+    crabState.anchor.appendChild(stage);
+    meteorState.stageEl = stage;
+    meteorState.bodyEl = body;
+    stepMeteorFrame();
+    return true;
+  }
+
   function unmountCrab() {
+    stopMeteorRide();
+    if (meteorState.toastTimer) {
+      clearTimeout(meteorState.toastTimer);
+      meteorState.toastTimer = null;
+    }
     if (crabState.stage.timer) clearTimeout(crabState.stage.timer);
     if (crabState.stage.animation) crabState.stage.animation.cancel();
     if (crabState.root && crabState.root.parentElement) crabState.root.parentElement.removeChild(crabState.root);
@@ -4727,7 +4905,7 @@
 
       if (!footer || cfg.inlineStats === false || cfg.composerRestyle === false) {
         card
-          .querySelectorAll('.ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-rim-progress, .ag-cs-hud-footer-chip')
+          .querySelectorAll('.ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-sprint-pill, .ag-cs-cost-guard-bar, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-rim-progress, .ag-cs-hud-footer-chip')
           .forEach((n) => n.remove());
         continue;
       }
@@ -4760,6 +4938,7 @@
         });
       }
       const needQuotaPoll =
+        cfg.ringMode === 'dual' ||
         cfg.ringMode === 'quota' ||
         cfg.hudBottomBar === true ||
         Boolean(openPopover && openPopover.isConnected && activeHudTab === 'quotas');
@@ -4856,12 +5035,29 @@
         ? ui.ringTooltip(remStr, maxStr, ring.contextRemainingPct.toFixed(1), usedStr, ring.contextUsedPct.toFixed(1), ring.quotaRemainingPct)
         : `Remaining ${remStr} / ${maxStr} (${ring.contextRemainingPct.toFixed(1)}%) · Used ${usedStr} (${ring.contextUsedPct.toFixed(1)}%)`;
     const lowCtxRingAttr =
-      ring.mode === 'context' && (d.calls > 0 || ring.usedTokens > 0) && ring.contextRemainingPct <= 20
+      (ring.mode === 'context' || ring.mode === 'dual') && (d.calls > 0 || ring.usedTokens > 0) && ring.contextRemainingPct <= 20
         ? ring.contextRemainingPct <= 10
           ? 'danger'
           : 'warn'
         : '';
-    const ringKey = `${ring.mode}|${lowCtxRingAttr}|${pctRound}|${dash}|${color}|${ringTitle}`;
+    const ctxPctRound = ring.contextPctRound ?? Math.round(ring.contextRemainingPct);
+    const qPctRound = ring.quotaPctRound;
+    const buildRingMarkup = () => {
+      if (ring.mode === 'dual') {
+        const rOut = 6.3;
+        const cOut = 2 * Math.PI * rOut;
+        const dOut = ((Math.max(0, Math.min(100, ring.contextRemainingPct)) / 100) * cOut).toFixed(2);
+        const rIn = 3.5;
+        const cIn = 2 * Math.PI * rIn;
+        const qVal = ring.quotaRemainingPct !== null ? Math.max(0, Math.min(100, ring.quotaRemainingPct)) : 100;
+        const dIn = ((qVal / 100) * cIn).toFixed(2);
+        const inColor = ring.quotaRemainingPct !== null ? ring.quotaColor : 'var(--ag-cs-heat-empty)';
+        const lbl = qPctRound !== null ? `${ctxPctRound}%·${qPctRound}%` : `${ctxPctRound}%`;
+        return `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="${rOut}" fill="none" stroke="var(--ag-cs-heat-empty)" stroke-width="1.9"/><circle class="ag-cs-ring-fill" cx="8" cy="8" r="${rOut}" fill="none" stroke="${ring.contextColor || color}" stroke-width="1.9" stroke-dasharray="${dOut} ${cOut.toFixed(2)}" stroke-linecap="round"/><circle cx="8" cy="8" r="${rIn}" fill="none" stroke="var(--ag-cs-heat-empty)" stroke-width="1.7"/><circle class="ag-cs-ring-fill-quota" cx="8" cy="8" r="${rIn}" fill="none" stroke="${inColor}" stroke-width="1.7" stroke-dasharray="${dIn} ${cIn.toFixed(2)}" stroke-linecap="round"/></svg><span class="ag-cs-ring-dual-label">${lbl}</span>`;
+      }
+      return `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--ag-cs-heat-empty)" stroke-width="2.2"/><circle class="ag-cs-ring-fill" cx="8" cy="8" r="${r}" fill="none" stroke="${color}" stroke-width="2.2" stroke-dasharray="${dash} ${circ.toFixed(2)}" stroke-linecap="round"/></svg><span>${pctRound}%</span>`;
+    };
+    const ringKey = `${ring.mode}|${lowCtxRingAttr}|${pctRound}|${ctxPctRound}|${qPctRound}|${dash}|${color}|${ringTitle}`;
 
     if (!ringBtn) {
       ringBtn = document.createElement('button');
@@ -4871,27 +5067,196 @@
       ringBtn.setAttribute('data-ring-mode', ring.mode);
       if (lowCtxRingAttr) ringBtn.setAttribute('data-ctx-low', lowCtxRingAttr);
       ringBtn.setAttribute('title', ringTitle);
-      ringBtn.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="${r}" fill="none" stroke="var(--ag-cs-heat-empty)" stroke-width="2.2"/><circle class="ag-cs-ring-fill" cx="8" cy="8" r="${r}" fill="none" stroke="${color}" stroke-width="2.2" stroke-dasharray="${dash} ${circ.toFixed(2)}" stroke-linecap="round"/></svg><span>${pctRound}%</span>`;
+      ringBtn.innerHTML = buildRingMarkup();
       ringBtn.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        const targetTab = cfg.ringMode === 'quota' ? 'quotas' : 'breakdown';
-        openContextPopover(ringBtn, resolveCardConvoData(card, d), targetTab);
+        const curInfo = resolveCardConvoData(card, d);
+        const curTel = getRingTelemetryForCard(card, curInfo).ring;
+        const targetTab =
+          cfg.ringMode === 'quota' ||
+          (cfg.ringMode === 'dual' &&
+            curTel.quotaRemainingPct !== null &&
+            curTel.quotaRemainingPct < curTel.contextRemainingPct)
+            ? 'quotas'
+            : 'breakdown';
+        openContextPopover(ringBtn, curInfo, targetTab);
       });
       footer.appendChild(ringBtn);
       ringBtn.setAttribute('data-ag-cs-ring-key', ringKey);
     } else if (ringBtn.getAttribute('data-ag-cs-ring-key') !== ringKey) {
+      const prevMode = ringBtn.getAttribute('data-ring-mode');
       ringBtn.setAttribute('data-ag-cs-ring-key', ringKey);
       ringBtn.setAttribute('data-ring-mode', ring.mode);
       if (lowCtxRingAttr) ringBtn.setAttribute('data-ctx-low', lowCtxRingAttr);
       else ringBtn.removeAttribute('data-ctx-low');
       ringBtn.setAttribute('title', ringTitle);
-      const fillCircle = ringBtn.querySelector('.ag-cs-ring-fill');
-      const pctSpan = ringBtn.querySelector('span');
-      if (fillCircle) {
-        fillCircle.setAttribute('stroke', color);
-        fillCircle.setAttribute('stroke-dasharray', `${dash} ${circ.toFixed(2)}`);
+      if (prevMode !== ring.mode || ring.mode === 'dual') {
+        ringBtn.innerHTML = buildRingMarkup();
+      } else {
+        const fillCircle = ringBtn.querySelector('.ag-cs-ring-fill');
+        const pctSpan = ringBtn.querySelector('span');
+        if (fillCircle) {
+          fillCircle.setAttribute('stroke', color);
+          fillCircle.setAttribute('stroke-dasharray', `${dash} ${circ.toFixed(2)}`);
+        }
+        if (pctSpan) pctSpan.textContent = `${pctRound}%`;
       }
-      if (pctSpan) pctSpan.textContent = `${pctRound}%`;
+    }
+
+    syncSprintPill(footer, ui);
+    syncCostGuardBanner(card, d, draftEst, ui);
+  }
+
+  function ensureSprintTickerState() {
+    if (!sprintTimer) return;
+    const snap = sprintTimer.getSnapshot(Date.now());
+    if (snap.status === 'running' && !sprintTickInterval && !destroyed) {
+      sprintTickInterval = setInterval(() => {
+        if (destroyed || !sprintTimer) return;
+        const tickRes = sprintTimer.tick(Date.now());
+        if (tickRes.justCompleted) {
+          if (sprintTickInterval) {
+            clearInterval(sprintTickInterval);
+            sprintTickInterval = null;
+          }
+          const ui = uiText(getLang());
+          showComposerWishToast(
+            typeof ui.sprintDoneToast === 'function'
+              ? ui.sprintDoneToast(tickRes.durationMin)
+              : `🎉 ${tickRes.durationMin}m Focus Sprint complete!`
+          );
+          launchMeteorRide('celebration');
+        }
+        document.querySelectorAll('.ag-cs-sprint-pill').forEach((pill) => {
+          const footer = pill.parentElement;
+          if (footer) syncSprintPill(footer, uiText(getLang()));
+        });
+      }, 1000);
+    } else if (snap.status !== 'running' && sprintTickInterval) {
+      clearInterval(sprintTickInterval);
+      sprintTickInterval = null;
+    }
+  }
+
+  function syncSprintPill(footer, ui) {
+    if (!footer) return;
+    let pill = footer.querySelector('.ag-cs-sprint-pill');
+    if (!sprintTimer || cfg.sprintMinutes === 'off') {
+      if (pill) pill.remove();
+      ensureSprintTickerState();
+      return;
+    }
+    const snap = sprintTimer.getSnapshot(Date.now());
+    const focusOn = cfg.focusMode === true;
+    const tip =
+      typeof ui.sprintTooltip === 'function'
+        ? ui.sprintTooltip(snap.status, snap.formatted, focusOn)
+        : `Sprint ${snap.formatted}`;
+    const key = `${snap.status}|${snap.formatted}|${focusOn ? 1 : 0}|${tip}`;
+    if (!pill) {
+      pill = document.createElement('button');
+      pill.type = 'button';
+      pill.className = 'ag-cs-sprint-pill';
+      pill.setAttribute('data-ag-no-i18n', '');
+      pill.innerHTML = '<span class="ag-cs-sprint-dot"></span><span class="ag-cs-sprint-time"></span>';
+      pill.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const defMin = parseInt(cfg.sprintMinutes, 10) || 25;
+        sprintTimer.toggle(defMin, Date.now());
+        ensureSprintTickerState();
+        syncSprintPill(footer, uiText(getLang()));
+      });
+      pill.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        sprintTimer.reset(Date.now());
+        ensureSprintTickerState();
+        syncSprintPill(footer, uiText(getLang()));
+      });
+      footer.appendChild(pill);
+    }
+    if (pill.getAttribute('data-ag-cs-sprint-key') !== key) {
+      pill.setAttribute('data-ag-cs-sprint-key', key);
+      pill.setAttribute('data-sprint-status', snap.status);
+      if (focusOn) pill.setAttribute('data-focus-on', '1');
+      else pill.removeAttribute('data-focus-on');
+      pill.setAttribute('title', tip);
+      const timeSpan = pill.querySelector('.ag-cs-sprint-time');
+      if (timeSpan) timeSpan.textContent = snap.formatted;
+    }
+    ensureSprintTickerState();
+  }
+
+  function syncCostGuardBanner(card, data, draftEst, ui) {
+    if (!card || !usageCore || typeof usageCore.evaluateCostGuard !== 'function') return;
+    let bar = card.querySelector('.ag-cs-cost-guard-bar');
+    if (cfg.costGuard === false) {
+      if (bar) bar.remove();
+      return;
+    }
+    const guard = usageCore.evaluateCostGuard({
+      draftTokens: Number(draftEst?.tokens || 0),
+      activeInfo: data,
+    });
+    if (!guard.active || dismissedCostGuardSigs.has(guard.signature)) {
+      if (bar) bar.remove();
+      return;
+    }
+    const draftFmt = usageCore.formatCompactTokens(guard.draftTokens);
+    const spikeFmt = usageCore.formatCompactTokens(guard.spikeTokens);
+    const msg =
+      typeof ui.costGuardMessage === 'function'
+        ? ui.costGuardMessage({
+            hasDraftWarn: guard.hasDraftWarn,
+            draftFmt,
+            hasSpikeWarn: guard.hasSpikeWarn,
+            spikeTurn: guard.spikeTurn,
+            spikeFmt,
+          })
+        : `Token Guard: ~${draftFmt}`;
+    const barKey = `${guard.signature}|${guard.level}|${msg}`;
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'ag-cs-cost-guard-bar';
+      bar.setAttribute('data-ag-no-i18n', '');
+      const textSpan = document.createElement('span');
+      textSpan.className = 'ag-cs-cost-guard-msg';
+      const actions = document.createElement('div');
+      actions.className = 'ag-cs-cost-guard-actions';
+      const compactBtn = document.createElement('button');
+      compactBtn.type = 'button';
+      compactBtn.className = 'ag-cs-cost-guard-btn';
+      compactBtn.textContent = '/compact';
+      compactBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        fillCompactCommand(card);
+      });
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'ag-cs-cost-guard-btn';
+      closeBtn.textContent = '×';
+      closeBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const curSig = bar.getAttribute('data-guard-sig') || '';
+        if (curSig) dismissedCostGuardSigs.add(curSig);
+        bar.remove();
+      });
+      actions.appendChild(compactBtn);
+      actions.appendChild(closeBtn);
+      bar.appendChild(textSpan);
+      bar.appendChild(actions);
+      if (typeof card.insertBefore === 'function') {
+        card.insertBefore(bar, card.firstChild);
+      } else {
+        card.appendChild(bar);
+      }
+    }
+    if (bar.getAttribute('data-ag-cs-guard-key') !== barKey) {
+      bar.setAttribute('data-ag-cs-guard-key', barKey);
+      bar.setAttribute('data-guard-sig', guard.signature);
+      bar.setAttribute('data-guard-level', guard.level);
+      const textSpan = bar.querySelector('.ag-cs-cost-guard-msg');
+      if (textSpan) textSpan.textContent = `⚡ ${msg}`;
     }
   }
 
@@ -5092,10 +5457,49 @@
       ringMode: {
         key: 'ringMode',
         title: ui.setRingModeTitle || 'Bottom-Right Ring Mode',
-        desc: ui.setRingModeDesc || 'Display Context Remaining % or Model Quota Remaining %.',
+        desc: ui.setRingModeDesc || 'Display Dual Concentric Rings, Context Rem %, or Quota Rem %.',
         opts: [
+          ['dual', ui.optRingDual || 'Dual Ring %'],
           ['context', ui.optRingContext || 'Context Rem %'],
           ['quota', ui.optRingQuota || 'Quota Rem %'],
+        ],
+      },
+      focusMode: {
+        key: 'focusMode',
+        title: ui.setFocusModeTitle || 'Deep Focus Mode (Alt+Shift+F)',
+        desc: ui.setFocusModeDesc || 'Mute home ripple & turn badges; keep Clawd calm and pause auto meteor flights.',
+        opts: [
+          [true, ui.onLabel || 'On'],
+          [false, ui.offLabel || 'Off'],
+        ],
+      },
+      sprintMinutes: {
+        key: 'sprintMinutes',
+        title: ui.setSprintTitle || 'Focus Sprint Timer (Alt+Shift+P)',
+        desc: ui.setSprintDesc || 'Show sprint countdown pill in composer footer with golden meteor celebration on finish.',
+        opts: [
+          ['25', ui.optSprint25 || '25 min'],
+          ['45', ui.optSprint45 || '45 min'],
+          ['off', ui.offLabel || 'Off'],
+        ],
+      },
+      meteorRide: {
+        key: 'meteorRide',
+        title: ui.setMeteorTitle || 'Clawd Starlight Meteor Ride (Alt+Shift+M)',
+        desc: ui.setMeteorDesc || 'Periodic starlight meteor carries Clawd across composer when idle; click mid-flight to make a wish.',
+        opts: [
+          ['auto', ui.optMeteorAuto || 'Auto'],
+          ['manual', ui.optMeteorManual || 'Hotkey Only'],
+          ['off', ui.offLabel || 'Off'],
+        ],
+      },
+      costGuard: {
+        key: 'costGuard',
+        title: ui.setCostGuardTitle || 'Draft & Turn Token Cost Guard',
+        desc: ui.setCostGuardDesc || 'Show amber warning bar when live draft ≥4k tok or last turn spiked ≥15k tok.',
+        opts: [
+          [true, ui.onLabel || 'On'],
+          [false, ui.offLabel || 'Off'],
         ],
       },
       turnBadges: {
@@ -5164,6 +5568,11 @@
         id: 'interaction',
         title: ui.grpInteraction || 'Slider, Caret & Mascot',
         keys: ['effortSliderStyle', 'effortAccent', 'performanceBackdrop', 'smoothCaret', 'mascot', 'homeRipple'],
+      },
+      {
+        id: 'focus',
+        title: ui.grpFocus || 'Focus Flow & Starlight',
+        keys: ['focusMode', 'sprintMinutes', 'meteorRide', 'costGuard'],
       },
       {
         id: 'telemetry',
@@ -5315,7 +5724,7 @@
     if (!el || !el.closest) return false;
     return Boolean(
       el.closest(
-        '.ag-cs-home-panel-seat, .ag-cs-ripple-host, .ag-cs-crab, .ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-ctx-popover, .ag-cs-effort-popover, .ag-cs-perf-backdrop, .ag-cs-smooth-caret, .ag-cs-turn-bar, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-footer-chip, #' +
+        '.ag-cs-home-panel-seat, .ag-cs-ripple-host, .ag-cs-crab, .ag-cs-meteor-stage, .ag-cs-wish-toast, .ag-cs-sprint-pill, .ag-cs-cost-guard-bar, .ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-ctx-popover, .ag-cs-effort-popover, .ag-cs-perf-backdrop, .ag-cs-smooth-caret, .ag-cs-turn-bar, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-footer-chip, #' +
           SETTINGS_SEC_ID +
           ', #ag-claude-style-css'
       )
@@ -5451,10 +5860,52 @@
   }
 
   function onDocKeyDown(ev) {
+    if (focusCore && typeof focusCore.matchFocusHotkey === 'function') {
+      const act = focusCore.matchFocusHotkey(ev);
+      if (act === 'toggle-focus') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const nextFocus = !cfg.focusMode;
+        if (nextFocus) stopMeteorRide();
+        saveSetting('focusMode', nextFocus);
+        ensureSettingsSection();
+        return;
+      }
+      if (act === 'toggle-sprint') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (cfg.sprintMinutes === 'off') saveSetting('sprintMinutes', '25');
+        if (sprintTimer) {
+          sprintTimer.toggle(parseInt(cfg.sprintMinutes, 10) || 25, Date.now());
+          ensureSprintTickerState();
+          scheduleSync();
+        }
+        return;
+      }
+      if (act === 'launch-meteor') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        launchMeteorRide('cruise');
+        return;
+      }
+      if (act === 'toggle-hud') {
+        ev.preventDefault();
+        ev.stopPropagation();
+        if (openPopover && openPopover.isConnected) {
+          closeContextPopover();
+        } else {
+          window.__agClaudeStyle?.openContextPopover?.();
+        }
+        return;
+      }
+    }
     if (ev.key === 'Escape') {
       if (openPopover) closeContextPopover();
       if (openEffortPop) closeEffortPopover();
       return;
+    }
+    if (ev.target?.closest && ev.target.closest('[data-testid="agent-input-box"]')) {
+      meteorState.lastTypingAt = Date.now();
     }
     if (
       ev.key === 'Enter' &&
@@ -5551,6 +6002,7 @@
     const immediate = type === 'focusin' || type === 'mouseup' || type === 'transitionend';
     queueSmoothCaret(isTyping, immediate);
     if (type === 'input') {
+      meteorState.lastTypingAt = Date.now();
       if (ev?.target?.closest && ev.target.closest('[data-testid="agent-input-box"]')) {
         scheduleSync();
       }
@@ -5645,6 +6097,15 @@
       clearInterval(pollTimer);
       pollTimer = null;
     }
+    if (sprintTickInterval !== null) {
+      clearInterval(sprintTickInterval);
+      sprintTickInterval = null;
+    }
+    stopMeteorRide();
+    if (meteorState.toastTimer) {
+      clearTimeout(meteorState.toastTimer);
+      meteorState.toastTimer = null;
+    }
     if (charDataThrottleTimer) {
       clearTimeout(charDataThrottleTimer);
       charDataThrottleTimer = null;
@@ -5723,6 +6184,21 @@
       if (document.querySelector('[data-testid="conversation-view"], [data-testid="agent-input-box"]')) {
         scheduleSync();
       }
+      if (
+        focusCore &&
+        focusCore.shouldAutoLaunchMeteor({
+          meteorMode: cfg.meteorRide,
+          focusMode: Boolean(cfg.focusMode),
+          mascot: cfg.mascot,
+          isFlightActive: Boolean(meteorState.flight),
+          hasError: Boolean(crabState.stage?.level?.state === 'error'),
+          now: Date.now(),
+          lastTypingAt: meteorState.lastTypingAt,
+          nextAutoAt: meteorState.nextAutoAt,
+        })
+      ) {
+        launchMeteorRide('cruise');
+      }
     }, Math.max(1000, Number(cfg.pollIntervalMs) || 2500));
 
     ensureHooks(true);
@@ -5771,6 +6247,12 @@
       const data = (cid && activeTrajCache.get(cid)?.data) || card?._agCsLastData || null;
       if (a) openContextPopover(a, data, tab || 'breakdown');
     },
+    launchMeteorRide(kind) {
+      return launchMeteorRide(kind || 'cruise');
+    },
+    triggerMeteorWish() {
+      return triggerCrabMeteorWish();
+    },
     getState() {
       return {
         cfg: { ...cfg },
@@ -5778,6 +6260,7 @@
         hasPanel: Boolean(panelEl && panelEl.isConnected),
         hasRipple: Boolean(rippleMount && rippleMount.canvas.isConnected),
         hasCrab: Boolean(crabState.root && crabState.root.isConnected),
+        hasMeteor: Boolean(meteorState.stageEl && meteorState.stageEl.isConnected),
         hasSmoothCaret: Boolean(document.querySelector('.ag-cs-smooth-caret')),
         hasEffortPopover: Boolean(openEffortPop && openEffortPop.isConnected),
         hasContextPopover: Boolean(openPopover && openPopover.isConnected),
@@ -5816,7 +6299,7 @@
       });
       document
         .querySelectorAll(
-          '.ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-rim-progress, .ag-cs-hud-footer-chip, .ag-cs-perf-backdrop, #' + SETTINGS_SEC_ID
+          '.ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-sprint-pill, .ag-cs-cost-guard-bar, .ag-cs-meteor-stage, .ag-cs-wish-toast, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-rim-progress, .ag-cs-hud-footer-chip, .ag-cs-perf-backdrop, #' + SETTINGS_SEC_ID
         )
         .forEach((el) => el.remove());
       const html = document.documentElement;
@@ -5832,6 +6315,7 @@
           'data-ag-cs-hud-compact',
           'data-ag-cs-effort-accent',
           'data-ag-cs-perf-backdrop',
+          'data-ag-cs-focus',
           'data-ag-cs-lang',
           'data-ag-cs-cjk',
         ]) {

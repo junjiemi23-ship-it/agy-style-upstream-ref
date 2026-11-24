@@ -998,7 +998,7 @@ test('fail-closed PID ownership blocks kill/overwrite on unknown or foreign PIDs
         signalsOwned.push([p, sig || 'SIGTERM']);
       },
       inspectFn: () => ({
-        cmd: `${process.execPath} ${path.join(lockDir, 'inject.js')} --watch`,
+        cmd: `"${process.execPath}" "${path.join(lockDir, 'inject.js')}" --watch`,
         args: null,
         exePath: null,
         cwd: null,
@@ -1407,7 +1407,7 @@ test('acquireLock with allowGracefulDuplicateExit keeps fail-closed unknown/fore
         if (sig) signalsOwned.push([p, sig]);
       },
       inspectFn: () => ({
-        cmd: `${process.execPath} ${path.join(lockDir, 'inject.js')} --managed`,
+        cmd: `"${process.execPath}" "${path.join(lockDir, 'inject.js')}" --managed`,
         args: null,
         exePath: null,
         cwd: null,
@@ -1441,7 +1441,7 @@ test('acquireLock with allowGracefulDuplicateExit keeps fail-closed unknown/fore
         }
       },
       inspectFn: () => ({
-        cmd: `${process.execPath} ${path.join(lockDir, 'inject.js')} --managed`,
+        cmd: `"${process.execPath}" "${path.join(lockDir, 'inject.js')}" --managed`,
         args: null,
         exePath: null,
         cwd: null,

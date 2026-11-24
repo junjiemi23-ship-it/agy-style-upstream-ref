@@ -1,7 +1,7 @@
 {
-  "name": "agy-claude-style",
-  "version": "2.1.0",
-  "description": "AGY Claude Style — Claude Code / dsh-claude-style studio UI theme, interactive ASCII ripple field, usage dashboard, compact composer, and pixel crab mascot for Google Antigravity.",
+  "name": "agy-claude-style-focus",
+  "version": "2.2.0",
+  "description": "AGY Claude Style (Focus & Cost Guard Edition) — Deep focus mode, sprint timer, starlight meteor ride for Clawd, dual context/quota ring, and token cost guard for Google Antigravity.",
   "private": true,
   "scripts": {
     "test": "node --test test/*.test.mjs",

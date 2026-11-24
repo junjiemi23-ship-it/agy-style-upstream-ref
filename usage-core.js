@@ -2187,6 +2187,10 @@
   }
 
   // Compute remaining-usage telemetry for the bottom-right circular ring (.ag-cs-context-ring).
+  function ringColorForPct(p) {
+    return p <= 10 ? '#dc3c3d' : p <= 30 ? '#fbb315' : '#257de0';
+  }
+
   function computeRingTelemetry({
     activeInfo = null,
     quotaInfo = null,
@@ -2211,10 +2215,18 @@
         ? Math.max(0, Math.min(100, quotaInfo.effectiveRemainingPct))
         : null;
 
-    let mode = ringMode === 'quota' ? 'quota' : 'context';
+    const contextPctRound = Math.round(contextRemainingPct);
+    const quotaPctRound = quotaRemainingPct !== null ? Math.round(quotaRemainingPct) : null;
+    const contextColor = ringColorForPct(contextRemainingPct);
+    const quotaColor = quotaRemainingPct !== null ? ringColorForPct(quotaRemainingPct) : '#63c59a';
+
+    let mode = ringMode === 'dual' ? 'dual' : ringMode === 'quota' ? 'quota' : 'context';
     let pct = contextRemainingPct;
     let level;
-    if (mode === 'quota' && quotaRemainingPct !== null) {
+    if (mode === 'dual') {
+      pct = quotaRemainingPct !== null ? Math.min(contextRemainingPct, quotaRemainingPct) : contextRemainingPct;
+      level = pct <= 10 ? 'danger' : pct <= 30 ? 'warn' : 'ok';
+    } else if (mode === 'quota' && quotaRemainingPct !== null) {
       pct = quotaRemainingPct;
       level = pct <= 10 ? 'danger' : pct <= 30 ? 'warn' : 'ok';
     } else {
@@ -2224,7 +2236,7 @@
     }
 
     const pctRound = Math.round(pct);
-    const color = level === 'danger' ? '#dc3c3d' : level === 'warn' ? '#fbb315' : '#257de0';
+    const color = ringColorForPct(pct);
 
     return {
       mode,
@@ -2233,6 +2245,10 @@
       pctRound,
       level,
       color,
+      contextColor,
+      quotaColor,
+      contextPctRound,
+      quotaPctRound,
       usedTokens,
       remainingTokens,
       maxTokens,
@@ -2240,6 +2256,48 @@
       contextUsedPct,
       contextRemainingPct,
       quotaRemainingPct,
+    };
+  }
+
+  function evaluateCostGuard({
+    draftTokens = 0,
+    activeInfo = null,
+    draftWarnTokens = 4000,
+    turnSpikeWarnTokens = 15000,
+  } = {}) {
+    const draft = Math.max(0, Math.round(Number(draftTokens) || 0));
+    const dThreshold = Math.max(500, Number(draftWarnTokens) || 4000);
+    const sThreshold = Math.max(2000, Number(turnSpikeWarnTokens) || 15000);
+
+    const hasDraftWarn = draft >= dThreshold;
+    let spikeTurn = 0;
+    let spikeTokens = 0;
+    const turns = Array.isArray(activeInfo?.turnDetails) ? activeInfo.turnDetails : [];
+    if (turns.length > 0) {
+      const last = turns[turns.length - 1];
+      const delta = Math.round(Number(last?.ctxDelta || 0));
+      if (delta >= sThreshold) {
+        spikeTurn = Number(last?.turn || turns.length);
+        spikeTokens = delta;
+      }
+    }
+    const hasSpikeWarn = spikeTokens >= sThreshold;
+    const active = hasDraftWarn || hasSpikeWarn;
+    const isDanger = draft >= dThreshold * 2.5 || spikeTokens >= sThreshold * 2;
+    const level = !active ? 'ok' : isDanger ? 'danger' : 'warn';
+    const kind = hasDraftWarn && hasSpikeWarn ? 'both' : hasDraftWarn ? 'draft' : hasSpikeWarn ? 'spike' : 'none';
+    const signature = active ? `${kind}:d${hasDraftWarn ? Math.floor(draft / 500) : 0}:t${spikeTurn}:${spikeTokens}` : '';
+
+    return {
+      active,
+      kind,
+      level,
+      draftTokens: draft,
+      hasDraftWarn,
+      hasSpikeWarn,
+      spikeTurn,
+      spikeTokens,
+      signature,
     };
   }
 
@@ -2351,6 +2409,7 @@
     normalizeQuotaData,
     getActiveQuotaInfo,
     computeRingTelemetry,
+    evaluateCostGuard,
     buildTelemetryReport,
   };
 });

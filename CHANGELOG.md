@@ -1,6 +1,29 @@
 # Changelog
 
-All notable changes to **AGY Claude Style (`agy-claude-style`)** are documented in this file.
+All notable changes to **AGY Claude Style · Focus & Starlight Edition (`agy-claude-style-focus`)** are documented in this file.
+
+## [v2.2.0] - 2026-11-24
+
+`v2.2.0` 为基于上游 `0DNANCY/agy-claude-style` `v2.1.0` 的专注生产力与星轨互动增强版：新增 **小螃蟹流星御风巡游与空中许愿彩蛋**、**深潜专注模式 + 番茄冲刺计时胶囊**、**右下角双同心圆环（`dual` 上下文+配额同显）**、**大草稿与单轮 Token 暴增守门员** 及 **4 组全局键盘快捷键**，并修复了上游 Windows Node 路径含空格时的单测命令引号问题。
+
+### 🌠 星轨御风互动与专注生产力流（`focus-core.js`）
+- **小螃蟹流星御风巡游（`meteorRide: auto | manual | off`）**：
+  - 闲置未打字（≥45 秒）且未开启深潜专注时，周期性召唤发光流星从输入框侧翼俯冲迎驾，接起 `Clawd` 沿三次平滑抛物星轨横跨输入框上空滑翔返航。
+  - **空中点击许愿彩蛋**：飞行途中点击小螃蟹或流星，触发星尘许愿气泡（`✦ 许愿成功！灵感满格 ✦`）与 `Clawd` 欢呼动作；支持 `Alt+Shift+M` 或 `Shift + 单击小螃蟹` 随时手动召唤。
+- **深潜专注模式（`focusMode` · `Alt+Shift+F`）**：
+  - 一键静默首页动态波纹与对话轮次徽章噪声，将小螃蟹锁定为安静戴耳机陪伴态并自动暂停流星巡游，退出后无损恢复原设置。
+- **番茄冲刺计时胶囊（`sprintMinutes: 25 | 45 | off` · `Alt+Shift+P`）**：
+  - 输入框底栏内嵌极简倒计时胶囊（左键启停、右键重置），倒计时达成时自动召唤**专属金色庆典流星**带着小螃蟹撒花巡游并提醒起身休息 2 分钟。
+
+### 🛡️ 双同心圆环与 Token 成本守门员（`usage-core.js`）
+- **右下角双同心圆环（`ringMode: dual` 默认启用）**：
+  - 外环实时展示当前对话上下文余量百分比，内环同步展示账号模型配额余量百分比，无需在 `context` 与 `quota` 间来回切换；点击时自动跳转至余量更紧迫的遥测分栏。
+- **大草稿与单轮暴增守门员（`costGuard`）**：
+  - 当输入框实时草稿预估 `≥ 4,000 tokens` 或上一轮上下文单次激增 `≥ 15,000 tokens` 时，在输入框顶部弹出琥珀色/珊瑚红提醒条，提供一键 `/compact` 压缩与本轮忽略操作。
+- **全局快捷键与 5 语言设置集成**：
+  - 新增 `Alt+Shift+F`（深潜专注）、`Alt+Shift+P`（冲刺计时）、`Alt+Shift+M`（召唤流星）、`Alt+Shift+T`（开关遥测浮窗），并在 `设置 → 外观` 扩展至 24 项 5 语言可视化开关。
+
+---
 
 ## [v2.1.0] - 2026-11-22
 

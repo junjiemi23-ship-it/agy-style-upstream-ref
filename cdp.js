@@ -6,7 +6,7 @@ const path = require('path');
 const { execFileSync, spawn } = require('child_process');
 
 const STYLE_ID = 'ag-claude-style-css';
-const PLUGIN_VERSION = '2.1.0';
+const PLUGIN_VERSION = '2.2.0';
 const SETTING_BINDING = '__agClaudeStyleSetting';
 const STARTUP_GRACE_SECONDS = 90;
 const IS_MAC = process.platform === 'darwin';
@@ -31,8 +31,12 @@ const DEFAULT_CONFIG = {
   mascot: 'crab',
   logoInk: 'accent',
   inlineStats: true,
-  ringMode: 'context',
+  ringMode: 'dual',
   turnBadges: true,
+  focusMode: false,
+  sprintMinutes: '25',
+  meteorRide: 'auto',
+  costGuard: true,
   hudTopBar: false,
   hudBottomBar: false,
   hudRimProgress: false,
@@ -60,8 +64,12 @@ const CONFIG_VALIDATORS = {
   mascot: ['crab', 'off'],
   logoInk: ['accent', 'foreground'],
   inlineStats: 'boolean',
-  ringMode: ['context', 'quota'],
+  ringMode: ['dual', 'context', 'quota'],
   turnBadges: 'boolean',
+  focusMode: 'boolean',
+  sprintMinutes: ['off', '25', '45'],
+  meteorRide: ['auto', 'manual', 'off'],
+  costGuard: 'boolean',
   hudTopBar: 'boolean',
   hudBottomBar: 'boolean',
   hudRimProgress: 'boolean',
@@ -254,7 +262,7 @@ function readCss() {
   return fs.readFileSync(path.join(__dirname, 'style.css'), 'utf8');
 }
 
-const RUNTIME_PARTS = ['i18n-locales.js', 'i18n-core.js', 'sidecar-core.js', 'usage-core.js', 'ripple-core.js', 'mascot-core.js', 'crab-assets.js', 'effort-core.js', 'perf-assets.js', 'ui-runtime.js'];
+const RUNTIME_PARTS = ['i18n-locales.js', 'i18n-core.js', 'sidecar-core.js', 'usage-core.js', 'ripple-core.js', 'mascot-core.js', 'focus-core.js', 'crab-assets.js', 'effort-core.js', 'perf-assets.js', 'ui-runtime.js'];
 
 function readRuntimeBundle() {
   return RUNTIME_PARTS.map((f) => fs.readFileSync(path.join(__dirname, f), 'utf8')).join('\n');
@@ -393,6 +401,7 @@ const REMOVE_EXPRESSION = `(() => {
   delete globalThis.__agCsUiMain;
   delete globalThis.__agCsCrabAssets;
   delete globalThis.__agCsMascotCore;
+  delete globalThis.__agCsFocusCore;
   delete globalThis.__agCsRippleCore;
   delete globalThis.__agCsUsageCore;
   delete globalThis.__agCsEffortCore;
@@ -404,12 +413,13 @@ const REMOVE_EXPRESSION = `(() => {
   if (root) {
     root.removeAttribute('data-ag-cs-effort-accent');
     root.removeAttribute('data-ag-cs-perf-backdrop');
+    root.removeAttribute('data-ag-cs-focus');
     root.removeAttribute('data-ag-cs-lang');
     root.removeAttribute('data-ag-cs-cjk');
     if (root.getAttribute('data-ag-cjk') === '1') root.removeAttribute('data-ag-cjk');
   }
   const nodes = document.querySelectorAll(
-    'style#${STYLE_ID}, style#ag-token-hud-style, .ag-cs-home-panel-seat, .ag-cs-ripple-host, .ag-cs-ripple-canvas, .ag-cs-crab, .ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-ctx-popover, .ag-cs-effort-popover, .ag-cs-perf-backdrop, .ag-cs-smooth-caret, .ag-cs-turn-bar, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-rim-progress, .ag-cs-hud-footer-chip, #ag-cs-settings-sec, .ag-th-top-bar, .ag-th-bottom-bar, .ag-th-rim-progress, .ag-th-footer-chip, .ag-th-popover, .ag-th-turn-bar, .ag-th-reopen-pill'
+    'style#${STYLE_ID}, style#ag-token-hud-style, .ag-cs-home-panel-seat, .ag-cs-ripple-host, .ag-cs-ripple-canvas, .ag-cs-crab, .ag-cs-meteor-stage, .ag-cs-wish-toast, .ag-cs-sprint-pill, .ag-cs-cost-guard-bar, .ag-cs-inline-stats, .ag-cs-context-ring, .ag-cs-ctx-popover, .ag-cs-effort-popover, .ag-cs-perf-backdrop, .ag-cs-smooth-caret, .ag-cs-turn-bar, .ag-cs-hud-top-bar, .ag-cs-hud-bottom-bar, .ag-cs-hud-rim-progress, .ag-cs-hud-footer-chip, #ag-cs-settings-sec, .ag-th-top-bar, .ag-th-bottom-bar, .ag-th-rim-progress, .ag-th-footer-chip, .ag-th-popover, .ag-th-turn-bar, .ag-th-reopen-pill'
   );
   nodes.forEach((n) => n.remove());
   return { removed: nodes.length };

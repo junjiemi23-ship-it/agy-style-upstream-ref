@@ -232,14 +232,53 @@
     ],
     setRingModeTitle: ['右下角圆环显示模式', '右下角圓環顯示模式', '右下角圓環顯示模式', 'Bottom-Right Ring Mode', '右下リング表示モード'],
     setRingModeDesc: [
-      '右下角圆环默认显示上下文窗口剩余百分比或当前模型配额剩余百分比。',
-      '右下角圓環預設顯示上下文視窗剩餘百分比或目前模型配額剩餘百分比。',
-      '右下角圓環預設顯示上下文視窗剩餘百分比定係而家個模型剩餘配額。',
-      'Display Context Remaining % or Model Quota Remaining %.',
-      '右下リングにコンテキスト残量またはモデルクォータ残量のどちらを表示するか選びます。',
+      '右下角圆环支持双环同显（外环上下文+内环配额）、仅上下文或仅配额剩余百分比。',
+      '右下角圓環支援雙環同顯（外環上下文+內環配額）、僅上下文或僅配額剩餘百分比。',
+      '右下角圓環支援雙環同顯（外環上下文+內環配額）、淨睇上下文或者淨睇剩餘配額。',
+      'Display Dual Concentric Rings (Context + Quota), Context Rem %, or Quota Rem %.',
+      '右下リングにデュアル（コンテキスト＋クォータ）、コンテキスト残量、クォータ残量を表示します。',
     ],
+    optRingDual: ['双环同显 %', '雙環同顯 %', '雙環同顯 %', 'Dual Ring %', 'デュアル %'],
     optRingContext: ['上下文剩余 %', '上下文剩餘 %', '上下文剩餘 %', 'Context Rem %', 'コンテキスト残量 %'],
     optRingQuota: ['配额剩余 %', '配額剩餘 %', '配額剩餘 %', 'Quota Rem %', 'クォータ残量 %'],
+    grpFocus: ['深潜专注与星轨互动', '深潛專注與星軌互動', '深潛專注同星軌互動', 'Focus Flow & Starlight', '集中モード＆流星インタラクション'],
+    setFocusModeTitle: ['深潜专注模式 (Alt+Shift+F)', '深潛專注模式 (Alt+Shift+F)', '深潛專注模式 (Alt+Shift+F)', 'Deep Focus Mode (Alt+Shift+F)', 'ディープ集中モード (Alt+Shift+F)'],
+    setFocusModeDesc: [
+      '开启后静默首页波纹与轮次徽章，小螃蟹锁定安静陪伴态并暂停自动流星巡游。',
+      '開啟後靜默首頁波紋與輪次徽章，小螃蟹鎖定安靜陪伴態並暫停自動流星巡遊。',
+      '開咗之後收埋首頁波紋同輪次徽章，小蟹仔靜靜哋陪你寫嘢並暫停自動流星。',
+      'Mute home ripple & turn badges; keep Clawd calm and pause auto meteor flights.',
+      'ホーム波紋とターンバッジを非表示にし、Clawd を静かな作業モードに保ちます。',
+    ],
+    setSprintTitle: ['番茄冲刺计时胶囊 (Alt+Shift+P)', '番茄衝刺計時膠囊 (Alt+Shift+P)', '番茄衝刺計時膠囊 (Alt+Shift+P)', 'Focus Sprint Timer (Alt+Shift+P)', 'ポモドーロ集中タイマー (Alt+Shift+P)'],
+    setSprintDesc: [
+      '在输入框底栏提供冲刺倒计时胶囊，达成时召唤金色流星带着小螃蟹撒花庆祝。',
+      '在輸入框底列提供衝刺倒數膠囊，達成時召喚金色流星帶著小螃蟹撒花慶祝。',
+      '喺輸入框底欄顯示衝刺倒數膠囊，夠鐘召喚金色流星帶小蟹仔慶祝。',
+      'Show sprint countdown pill in composer footer with golden meteor celebration on finish.',
+      'フッターに集中タイマーを表示し、完了時に黄金の流星で Clawd がお祝いします。',
+    ],
+    optSprint25: ['25 分钟', '25 分鐘', '25 分鐘', '25 min', '25 分'],
+    optSprint45: ['45 分钟', '45 分鐘', '45 分鐘', '45 min', '45 分'],
+    setMeteorTitle: ['小螃蟹流星御风巡游 (Alt+Shift+M)', '小螃蟹流星御風巡遊 (Alt+Shift+M)', '小蟹仔騎流星巡遊 (Alt+Shift+M)', 'Clawd Starlight Meteor Ride (Alt+Shift+M)', 'Clawd 流星クルーズ (Alt+Shift+M)'],
+    setMeteorDesc: [
+      '闲置未打字时偶发流星接小螃蟹沿星轨滑翔，飞行途中点击可触发许愿星尘彩蛋。',
+      '閒置未打字時偶發流星接小螃蟹沿星軌滑翔，飛行途中點擊可觸發許願星塵彩蛋。',
+      '無打字嗰陣間中會有流星接小蟹仔飛一圈，飛緊嗰陣撳佢仲可以許願爆星塵。',
+      'Periodic starlight meteor carries Clawd across composer when idle; click mid-flight to make a wish.',
+      'アイドル時に流星が Clawd を乗せて滑空します。飛行中にクリックすると星屑の願い事演出が発動。',
+    ],
+    optMeteorAuto: ['自动巡游', '自動巡遊', '自動巡遊', 'Auto', '自動'],
+    optMeteorManual: ['仅快捷键', '僅快捷鍵', '淨係快捷鍵', 'Hotkey Only', '手動のみ'],
+    setCostGuardTitle: ['大草稿与单轮 Token 暴增预警', '大草稿與單輪 Token 暴增預警', '大草稿同單輪 Token 暴增預警', 'Draft & Turn Token Cost Guard', '長文下書き＆急増コストガード'],
+    setCostGuardDesc: [
+      '当输入草稿 ≥4k tok 或上轮新增 ≥15k tok 时弹出琥珀色提醒条，防止误烧模型配额。',
+      '當輸入草稿 ≥4k tok 或上輪新增 ≥15k tok 時彈出琥珀色提醒列，防止誤燒模型配額。',
+      '草稿 ≥4k tok 或者上輪暴增 ≥15k tok 時彈出提醒條，防止唔覺意燒爆額度。',
+      'Show amber warning bar when live draft ≥4k tok or last turn spiked ≥15k tok.',
+      '下書き ≥4k tok または直近ターン増分 ≥15k tok の際に警告バーを表示します。',
+    ],
+    wishGrantedToast: ['✦ 许愿成功！灵感满格 ✦', '✦ 許願成功！靈感滿格 ✦', '✦ 許願成功！靈感爆棚 ✦', '✦ Wish Granted! Flow Unlocked ✦', '✦ 願いが叶いました！集中力アップ ✦'],
     setTurnBadgesTitle: ['对话轮次 Token 徽章', '對話輪次 Token 徽章', '對話輪次 Token 徽章', 'Per-Turn Token Badges', 'ターン毎 Token バッジ'],
     setTurnBadgesDesc: [
       '在每轮 AI 回复底部渲染上下文增量、输出与速率徽章。',
@@ -373,6 +412,62 @@
       if (lang === 'yue') return `剩低可用 ${remStr} / ${maxStr} (${remPctStr}%) · 用咗 ${usedStr} (${usedPctStr}%)${qTip}`;
       if (lang === 'ja') return `残り ${remStr} / ${maxStr} (${remPctStr}%) · 使用済 ${usedStr} (${usedPctStr}%)${qTip}`;
       return `Remaining ${remStr} / ${maxStr} (${remPctStr}%) · Used ${usedStr} (${usedPctStr}%)${qTip}`;
+    };
+    out.costGuardMessage = ({ hasDraftWarn, draftFmt, hasSpikeWarn, spikeTurn, spikeFmt }) => {
+      const parts = [];
+      if (hasDraftWarn) {
+        parts.push(
+          lang === 'zh-CN'
+            ? `草稿预估 ~${draftFmt} tok`
+            : lang === 'zh-TW'
+            ? `草稿預估 ~${draftFmt} tok`
+            : lang === 'yue'
+            ? `草稿預估 ~${draftFmt} tok`
+            : lang === 'ja'
+            ? `下書き ~${draftFmt} tok`
+            : `Draft ~${draftFmt} tok`
+        );
+      }
+      if (hasSpikeWarn) {
+        parts.push(
+          lang === 'zh-CN'
+            ? `#T${spikeTurn} 单轮激增 +${spikeFmt} tok`
+            : lang === 'zh-TW'
+            ? `#T${spikeTurn} 單輪激增 +${spikeFmt} tok`
+            : lang === 'yue'
+            ? `#T${spikeTurn} 單輪暴增 +${spikeFmt} tok`
+            : lang === 'ja'
+            ? `#T${spikeTurn} 急増 +${spikeFmt} tok`
+            : `#T${spikeTurn} spiked +${spikeFmt} tok`
+        );
+      }
+      return parts.join(' · ');
+    };
+    out.sprintDoneToast = (mins) =>
+      lang === 'zh-CN'
+        ? `🎉 ${mins} 分钟专注达成！起身喝口水活动 2 分钟吧`
+        : lang === 'zh-TW'
+        ? `🎉 ${mins} 分鐘專注達成！起身喝口水活動 2 分鐘吧`
+        : lang === 'yue'
+        ? `🎉 ${mins} 分鐘專注完成！起身飲啖水唞 2 分鐘啦`
+        : lang === 'ja'
+        ? `🎉 ${mins}分の集中達成！2分ほど休憩しましょう`
+        : `🎉 ${mins}m Focus Sprint complete! Take a 2-min stretch break`;
+    out.sprintTooltip = (status, formatted, focusOn) => {
+      const fTag = focusOn
+        ? lang === 'en'
+          ? ' [Deep Focus ON]'
+          : lang === 'ja'
+          ? ' [集中ON]'
+          : ' [深潜开启]'
+        : '';
+      if (lang === 'en') {
+        return `Sprint ${formatted} (${status})${fTag} · Click: Start/Pause · Right-click: Reset · Alt+Shift+F: Deep Focus`;
+      }
+      if (lang === 'ja') {
+        return `集中タイマー ${formatted} (${status})${fTag} · 左クリック: 開始/一時停止 · 右クリック: リセット`;
+      }
+      return `冲刺计时 ${formatted} (${status === 'running' ? '进行中' : status === 'paused' ? '已暂停' : '待命'})${fTag} · 左键启停 · 右键重置 · Alt+Shift+F 深潜专注`;
     };
     out.perfPreviewStatus = (frameStr, modelShort, subTitle, fullLabel) => {
       if (lang === 'zh-CN') return `预览帧 ${frameStr} · 松手吸附到 ${modelShort} ${subTitle}`;

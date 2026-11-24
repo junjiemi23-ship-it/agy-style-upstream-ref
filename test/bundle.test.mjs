@@ -424,10 +424,10 @@ test('inject expression mounts and REMOVE_EXPRESSION cleanly tears down on simul
     assert.ok(settingsSec);
     assert.equal(settingsSec.querySelector('h3')?.textContent, 'AGY Claude Style (agy-claude-style)');
     const settingGroups = settingsSec.querySelectorAll('.ag-cs-settings-group');
-    assert.equal(settingGroups.length, 3);
+    assert.equal(settingGroups.length, 4);
     assert.deepEqual(
       settingGroups.map((g) => g.getAttribute('data-ag-cs-group')),
-      ['appearance', 'interaction', 'telemetry']
+      ['appearance', 'interaction', 'focus', 'telemetry']
     );
     const hudDetails = settingsSec.querySelector('.ag-cs-settings-details');
     assert.ok(hudDetails);
@@ -440,7 +440,7 @@ test('inject expression mounts and REMOVE_EXPRESSION cleanly tears down on simul
     const settingKeys = new Set(
       appearancePanel.querySelectorAll('#ag-cs-settings-sec button').map((b) => b.getAttribute('data-ag-cs-key'))
     );
-    assert.equal(settingKeys.size, 20);
+    assert.equal(settingKeys.size, 24);
     for (const expectedKey of [
       'language',
       'homeLayout',
@@ -454,6 +454,10 @@ test('inject expression mounts and REMOVE_EXPRESSION cleanly tears down on simul
       'smoothCaret',
       'mascot',
       'homeRipple',
+      'focusMode',
+      'sprintMinutes',
+      'meteorRide',
+      'costGuard',
       'inlineStats',
       'ringMode',
       'turnBadges',
@@ -4640,4 +4644,200 @@ test('inject expression enters sidecar-lite mode on plugin://swarm-- iframe with
   assert.equal(html.getAttribute('lang'), 'en');
   assert.equal(sandbox.window.__agClaudeStyle, undefined);
   assert.equal(sandbox.globalThis.__agCsSidecarCore, undefined);
+});
+
+test('focus mode, sprint pill, dual ring, cost guard bar, and Clawd meteor wish mount and clean up cleanly', () => {
+  function makeNode(tag, opts = {}) {
+    const attrs = new Map(Object.entries(opts.attrs || {}));
+    const listeners = new Map();
+    const children = [];
+    const classes = new Set((opts.className || '').split(/\s+/).filter(Boolean));
+    const node = {
+      tagName: tag.toUpperCase(),
+      id: opts.id || '',
+      style: {
+        _props: {},
+        setProperty(k, v) { this._props[k] = String(v); },
+        getPropertyValue(k) { return this._props[k] || ''; },
+        removeProperty(k) { delete this._props[k]; },
+      },
+      classList: {
+        contains: (c) => classes.has(c),
+        add: (c) => classes.add(c),
+        remove: (c) => classes.delete(c),
+      },
+      get className() { return Array.from(classes).join(' '); },
+      set className(v) { classes.clear(); String(v).split(/\s+/).filter(Boolean).forEach((c) => classes.add(c)); },
+      children,
+      parentElement: null,
+      parentNode: null,
+      isConnected: true,
+      _text: opts.text || '',
+      get textContent() { return children.length ? children.map((c) => c.textContent).join('') : this._text; },
+      set textContent(v) { children.length = 0; this._text = String(v); },
+      set innerHTML(h) { children.length = 0; this._html = h; },
+      get innerHTML() { return this._html || ''; },
+      get firstChild() { return children[0] || null; },
+      get lastElementChild() { return children[children.length - 1] || null; },
+      appendChild(ch) { ch.parentElement = this; ch.parentNode = this; children.push(ch); return ch; },
+      insertBefore(ch, ref) {
+        ch.parentElement = this;
+        ch.parentNode = this;
+        const i = ref ? children.indexOf(ref) : -1;
+        if (i >= 0) children.splice(i, 0, ch);
+        else children.push(ch);
+        return ch;
+      },
+      removeChild(ch) {
+        const i = children.indexOf(ch);
+        if (i >= 0) children.splice(i, 1);
+        ch.parentElement = null;
+        ch.parentNode = null;
+        return ch;
+      },
+      remove() { if (this.parentElement) this.parentElement.removeChild(this); },
+      setAttribute(k, v) { attrs.set(k, String(v)); if (k === 'id') this.id = String(v); },
+      getAttribute(k) { return attrs.has(k) ? attrs.get(k) : null; },
+      hasAttribute(k) { return attrs.has(k); },
+      removeAttribute(k) { attrs.delete(k); },
+      toggleAttribute(k, f) { const on = f === undefined ? !attrs.has(k) : Boolean(f); if (on) attrs.set(k, ''); else attrs.delete(k); return on; },
+      addEventListener(ev, cb) { if (!listeners.has(ev)) listeners.set(ev, []); listeners.get(ev).push(cb); },
+      removeEventListener() {},
+      getBoundingClientRect() { return { left: 0, top: 0, right: 440, bottom: 180, width: 440, height: 180 }; },
+      animate() { return { cancel() {}, finished: Promise.resolve() }; },
+      closest(sel) {
+        let cur = this;
+        while (cur) { if (matchSel(cur, sel)) return cur; cur = cur.parentElement; }
+        return null;
+      },
+      querySelector(sel) { return this.querySelectorAll(sel)[0] || null; },
+      querySelectorAll(sel) {
+        const out = [];
+        const walk = (n) => { for (const c of n.children) { if (matchSel(c, sel)) out.push(c); walk(c); } };
+        walk(this);
+        return out;
+      },
+    };
+    return node;
+  }
+  function matchOne(n, s) {
+    let rest = s.trim();
+    if (!rest) return false;
+    const tm = /^[a-zA-Z0-9_-]+/.exec(rest);
+    if (tm) { if (n.tagName !== tm[0].toUpperCase()) return false; rest = rest.slice(tm[0].length); }
+    while (rest) {
+      if (rest[0] === '.') {
+        const m = /^\.([a-zA-Z0-9_-]+)/.exec(rest);
+        if (!m || !n.classList.contains(m[1])) return false;
+        rest = rest.slice(m[0].length);
+      } else if (rest[0] === '#') {
+        const m = /^#([a-zA-Z0-9_-]+)/.exec(rest);
+        if (!m || n.id !== m[1]) return false;
+        rest = rest.slice(m[0].length);
+      } else if (rest[0] === '[') {
+        const m = /^\[([a-zA-Z0-9_-]+)(?:="([^"]*)")?\]/.exec(rest);
+        if (!m) return false;
+        if (m[2] !== undefined ? n.getAttribute(m[1]) !== m[2] : !n.hasAttribute(m[1])) return false;
+        rest = rest.slice(m[0].length);
+      } else return false;
+    }
+    return true;
+  }
+  function matchSel(n, sel) {
+    return sel.split(',').some((part) => {
+      const segs = part.trim().split(/\s+/);
+      let cur = n;
+      for (let i = segs.length - 1; i >= 0; i--) {
+        if (!cur) return false;
+        if (i === segs.length - 1) { if (!matchOne(cur, segs[i])) return false; cur = cur.parentElement; }
+        else { while (cur && !matchOne(cur, segs[i])) cur = cur.parentElement; if (!cur) return false; cur = cur.parentElement; }
+      }
+      return true;
+    });
+  }
+
+  const html = makeNode('html');
+  const head = makeNode('head');
+  const body = makeNode('body', { className: 'dark' });
+  html.appendChild(head);
+  html.appendChild(body);
+
+  const convo = makeNode('div', { attrs: { 'data-testid': 'conversation-view' } });
+  const inputBox = makeNode('div', { attrs: { 'data-testid': 'agent-input-box' } });
+  const card = makeNode('div', { className: 'surface-composer-card' });
+  const editor = makeNode('div', { attrs: { contenteditable: 'true' }, text: 'A'.repeat(18000) });
+  const footer = makeNode('div', { className: 'agy-composer-footer' });
+  card.appendChild(editor);
+  card.appendChild(footer);
+  inputBox.appendChild(card);
+  convo.appendChild(inputBox);
+  body.appendChild(convo);
+
+  const doc = {
+    documentElement: html,
+    head,
+    body,
+    hidden: false,
+    createElement: (t) => makeNode(t),
+    getElementById: (id) => html.querySelector('#' + id),
+    querySelector: (s) => html.querySelector(s),
+    querySelectorAll: (s) => html.querySelectorAll(s),
+    addEventListener() {},
+    removeEventListener() {},
+  };
+  const timers = new Set();
+  const intervals = new Set();
+  const store = new Map();
+  const sandbox = {
+    document: doc,
+    location: { href: 'app://antigravity/chat', pathname: '/chat', protocol: 'app:' },
+    localStorage: {
+      getItem: (k) => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: (k) => store.delete(k),
+    },
+    MutationObserver: class { observe() {} disconnect() {} },
+    setTimeout: (fn, ms) => { const id = setTimeout(fn, ms); timers.add(id); return id; },
+    clearTimeout: (id) => { timers.delete(id); clearTimeout(id); },
+    setInterval: (fn, ms) => { const id = setInterval(fn, ms); intervals.add(id); return id; },
+    clearInterval: (id) => { intervals.delete(id); clearInterval(id); },
+    matchMedia: () => ({ matches: false }),
+    console,
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+
+  try {
+    const res = vm.runInNewContext(cdp.buildInjectExpression(cdp.DEFAULT_CONFIG), sandbox);
+    assert.equal(res.status, 'ok');
+
+    const ring = footer.querySelector('.ag-cs-context-ring');
+    assert.ok(ring, 'Dual ring button mounted');
+    assert.equal(ring.getAttribute('data-ring-mode'), 'dual');
+    assert.ok(ring.innerHTML.includes('ag-cs-ring-fill-quota'), 'Dual concentric inner quota circle rendered');
+
+    const sprintPill = footer.querySelector('.ag-cs-sprint-pill');
+    assert.ok(sprintPill, 'Sprint timer pill mounted');
+
+    const guardBar = card.querySelector('.ag-cs-cost-guard-bar');
+    assert.ok(guardBar, 'Large draft >= 4k tok triggers cost guard warning bar');
+
+    assert.equal(sandbox.window.__agClaudeStyle.launchMeteorRide('cruise'), true);
+    assert.equal(sandbox.window.__agClaudeStyle.getState().hasMeteor, true);
+    assert.equal(sandbox.window.__agClaudeStyle.triggerMeteorWish(), true);
+    assert.ok(card.querySelector('.ag-cs-wish-toast'), 'Mid-flight wish spawns floating starlight toast');
+
+    sandbox.window.__agClaudeStyle.refreshConfig({ ...cdp.DEFAULT_CONFIG, focusMode: true });
+    assert.equal(html.getAttribute('data-ag-cs-focus'), '1');
+
+    vm.runInNewContext(cdp.REMOVE_EXPRESSION, sandbox);
+    assert.equal(html.hasAttribute('data-ag-cs-focus'), false);
+    assert.equal(card.querySelector('.ag-cs-meteor-stage'), null);
+    assert.equal(card.querySelector('.ag-cs-cost-guard-bar'), null);
+    assert.equal(footer.querySelector('.ag-cs-sprint-pill'), null);
+    assert.equal(sandbox.globalThis.__agCsFocusCore, undefined);
+  } finally {
+    for (const id of timers) clearTimeout(id);
+    for (const id of intervals) clearInterval(id);
+  }
 });
