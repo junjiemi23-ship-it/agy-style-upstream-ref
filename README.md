@@ -48,6 +48,7 @@
 <a id="目录"></a>
 ## 🗺️ 目录
 
+- [🌠 Focus & Starlight 二开新增亮点（快捷键速查）](#星轨御风与深潜专注)
 - [✨ 核心特性](#核心特性)
 - [🦀 小螃蟹 Clawd 饲养指南](#clawd-饲养指南)
 - [🎒 环境要求](#环境要求)
@@ -83,8 +84,9 @@
 - **ChatGPT Codex (`chatgpt`)**：蓝→紫渐变进度条、高档位星云扫光、星空粒子及阻尼刻度手感 ✨。
 - **梁武峰 (`liangwufeng`)**：内置 31 帧 320×320 WebP 抠像人像背景，支持 `performanceBackdrop`（`card` 卡片内 / `page` 全窗口 / `off` 关闭）三种渲染模式。
 
-### 📊 4. 贴心 Token HUD 与右下角电量小圆环
-- **右下角剩余用量圆环 (`ringMode`) & 低余量告警**：支持在**当前上下文剩余可用百分比 (`context`)** 与**模型配额剩余百分比 (`quota`)** 之间切换，随剩余容量动态变色提示（🔵 `>30%` 元气满满 · 🟡 `≤30%` 注意补水 · 🔴 `≤10%` 快见底啦）；当上下文余量 **`≤20%`（黄色提醒）** 或 **`≤10%`（红色紧急告警）** 时，`context` 模式圆环、`hudTopBar` `/compact` 按钮及浮窗顶部横幅会高亮提示，点击横幅或 `/compact` 即可向**当前所在对话输入框**精准填入 `/compact`。
+### 📊 4. 贴心 Token HUD、双同心电量环与成本守门员
+- **右下角双同心剩余用量圆环 (`ringMode: 'dual'`) & 低余量告警**：默认启用**双同心环模式 (`dual`)**——外环显示**当前上下文剩余可用百分比**、内环同步显示**账号模型配额剩余百分比**（亦可切换为单环 `context` 或 `quota`），随剩余容量动态变色提示（🔵 `>30%` 元气满满 · 🟡 `≤30%` 注意补水 · 🔴 `≤10%` 快见底啦）；当上下文余量 **`≤20%`（黄色提醒）** 或 **`≤10%`（红色紧急告警）** 时高亮提示，点击横幅或 `/compact` 即可向**当前所在对话输入框**精准填入 `/compact`。
+- **大草稿与单轮暴增守门员 (`costGuard`)**：实时监测输入框草稿体积（预估 `≥ 4,000 tok`）及上一轮工具/回复单次上下文暴增（`≥ 15,000 tok`），在输入框顶部弹出琥珀色/珊瑚红提醒条，从源头防止误烧高价模型配额。
 - **每轮对话 Token 徽章 (`turnBadges`)**：在每轮 AI 回复底部展示 `#T{n}` 模型名、上下文总量与本轮增量、输出与思考 Token、工具调用次数、子代理汇总、输出速率（`tok/s`）及缓存命中率。
 - **4 标签页深度遥测浮窗**：
   - **上下文拆分**：展示系统提示与规则、工具声明、对话历史消息、工具执行结果明细（支持展开查看）、实时草稿 Token 估算（输入时局部平滑刷新），并提供低余量警示横幅一键填充 `/compact` 与复制遥测报告摘要操作（成功显示 `✓ 已复制`，剪贴板写入失败或不可用时明确提示 `✕ 失败`）。
@@ -99,14 +101,14 @@
 
 ### 🌐 6. 5 语言全局切换 & 设置面板原生集成
 - **5 语言全局本地化 (`language`)**：支持 **简体中文 (`zh-CN`) / 繁體中文 (`zh-TW`) / 粵語 (`yue`) / English (`en`) / 日本語 (`ja`)** 实时切换，作用于整个 Antigravity 主界面、Plan / Orchestrator 编排模式、插件面板以及 **Swarm 蜂群侧栏 (`plugin://swarm--` OOPIF)**；自动跳过代码编辑器、终端、对话/帖子正文与 `data-ag-no-i18n` 保护区，移除插件时无损还原。
-- **原生设置集成**：在 Antigravity `设置 → 外观` 底部自动注入 3 组共 20 项可视化开关，修改通过 CDP `Runtime.addBinding` 以轻量热更新即时生效，并经字段校验后原子写入 `config.json` 持久化。
+- **原生设置集成**：在 Antigravity `设置 → 外观` 底部自动注入 4 组共 24 项可视化开关，修改通过 CDP `Runtime.addBinding` 以轻量热更新即时生效，并经字段校验后原子写入 `config.json` 持久化。
 
 ---
 
 <a id="clawd-饲养指南"></a>
 ## 🦀 小螃蟹 Clawd 饲养指南
 
-Clawd 是由 [crab-assets.js](crab-assets.js) 与 [mascot-core.js](mascot-core.js) 驱动的双层像素小生命，住在你的输入框右上角 🏡：
+Clawd 是由 [crab-assets.js](crab-assets.js)、[mascot-core.js](mascot-core.js) 与 [focus-core.js](focus-core.js) 驱动的双层像素小生命，住在你的输入框右上角 🏡：
 
 <div align="center">
   <img src="assets/clawd-moods.svg" alt="Clawd 5 Iconic Pixel Moods" width="880" />
@@ -116,6 +118,10 @@ Clawd 是由 [crab-assets.js](crab-assets.js) 与 [mascot-core.js](mascot-core.j
 
 | 互动方式 | 触发方法 | Clawd 的反应 |
 | --- | --- | --- |
+| 🌠 **流星御风巡游（二开原创）** | 闲置未打字满 `45s` 自动偶发，或按 `Alt+Shift+M` / `Shift+单击小螃蟹` | 冰蓝发光流星从输入框侧翼俯冲迎驾，接起 Clawd 沿抛物星轨横跨输入框滑翔一圈再稳稳落回原位！ |
+| ✦ **空中点击许愿（二开原创）** | 在流星带着 Clawd 滑翔途中点击小螃蟹或流星 | 立即弹出 `✦ 许愿成功！灵感满格 ✦` 金色星尘气泡，Clawd 切换爆笑欢呼 (`tickle`)！ |
+| 🍅 **冲刺达成庆典流星（二开原创）** | 底栏 `25/45 分钟` 番茄冲刺倒计时归零 | 召唤专属**金色庆典流星**带着 Clawd 撒花巡游，提醒你起身活动休息 2 分钟！ |
+| 🧘 **深潜安静陪伴（二开原创）** | 按 `Alt+Shift+F` 开启深潜专注模式 | 自动暂停流星飞行与随机摸鱼彩蛋，戴上小耳机 (`music`) 静静陪你专注码字 |
 | 👉 **轻戳小钳子** | 单击 Clawd 的左半边或右半边身体 | 害羞扭头给你看不同方向的小动作 (`poke-left` / `poke-right`) |
 | 🤭 **疯狂挠痒痒** | `450ms` 内快速连点 Clawd **4 下** | 触发爆笑踢腿大反应 (`tickle`)，眼睛笑成 `^ ^`！ |
 | 🤏 **拎起来晃一晃** | 按住鼠标左键拖拽 Clawd | 进入悬空手舞足蹈模式 (`drag`)，松手才乖乖落地 |
@@ -157,7 +163,7 @@ Clawd 是由 [crab-assets.js](crab-assets.js) 与 [mascot-core.js](mascot-core.j
 ## 🚀 快速开始
 
 > [!TIP]
-> **开箱即用**：不想自己编译？可直接前往仓库 [Releases](https://github.com/0DNANCY/agy-claude-style/releases) 下载 GitHub Actions 自动编译发布的 `AGY-Claude-Style-v<version>-Windows-x64.exe`（Windows）或 `AGY-Claude-Style-v<version>-macOS-universal.dmg`（macOS Universal，支持 Apple Silicon 与 Intel），目标机器无需安装 Node.js！
+> **开箱即用**：不想自己编译？可直接前往本仓库 [Releases](https://github.com/junjiemi23-ship-it/agy-claude-style-focus/releases) 下载已打包全部专注模式与流星彩蛋的 `AGY-Claude-Style-v2.2.0-Windows-x64.exe`（Windows，目标机器无需安装 Node.js）！
 
 <a id="运行模式对比"></a>
 ### 🔄 运行模式对比：托管启动（推荐默认） vs 常驻守护
@@ -182,10 +188,10 @@ AGY Claude Style 提供两种运行模式。**默认推荐「托管启动模式�
 <a id="方式一windows-独立安装器目标机器无需-nodejs"></a>
 ### 🪟 方式一：Windows 独立安装器（目标机器无需 Node.js）
 
-1. 直接从 [Releases](https://github.com/0DNANCY/agy-claude-style/releases) 下载 `AGY-Claude-Style-v2.1.0-Windows-x64.exe`（对应版本），或在已安装 Node.js >= 22 的 Windows 环境克隆仓库从源码构建：
+1. 直接从本仓库 [Releases](https://github.com/junjiemi23-ship-it/agy-claude-style-focus/releases) 下载 `AGY-Claude-Style-v2.2.0-Windows-x64.exe`（对应版本），或在已安装 Node.js >= 22 的 Windows 环境克隆本仓库从源码构建：
    ```bash
-   git clone https://github.com/0DNANCY/agy-claude-style.git
-   cd agy-claude-style
+   git clone https://github.com/junjiemi23-ship-it/agy-claude-style-focus.git
+   cd agy-claude-style-focus
    npm run build:installer
    ```
    构建完成后会在项目根目录生成带有像素螃蟹图标的单文件 `AGY-Claude-Style-v<version>-Windows-x64.exe` 🦀。
@@ -201,7 +207,7 @@ AGY Claude Style 提供两种运行模式。**默认推荐「托管启动模式�
 
 3. 安装器支持的命令行参数：
    ```text
-   AGY-Claude-Style-v2.1.0-Windows-x64.exe [--silent | /S | -s] [--uninstall] [--status]
+   AGY-Claude-Style-v2.2.0-Windows-x64.exe [--silent | /S | -s] [--uninstall] [--status]
                                            [--mode=managed | --mode=daemon | --managed | --daemon]
                                            [--desktop-shortcut | --no-desktop-shortcut]
                                            [--no-autostart] [--no-kill-legacy]
@@ -218,10 +224,10 @@ AGY Claude Style 提供两种运行模式。**默认推荐「托管启动模式�
 <a id="方式二macos-独立应用目标机器无需-nodejs"></a>
 ### 🍎 方式二：macOS 独立应用（目标机器无需 Node.js）
 
-1. 直接从 [Releases](https://github.com/0DNANCY/agy-claude-style/releases) 下载 `AGY-Claude-Style-v2.1.0-macOS-universal.dmg`（对应版本），或在已安装 Node.js >= 22 与 Xcode Command Line Tools 的 macOS 环境从源码构建：
+1. 直接从 [Releases](https://github.com/junjiemi23-ship-it/agy-claude-style-focus/releases) 下载对应版本安装包，或在已安装 Node.js >= 22 与 Xcode Command Line Tools 的 macOS 环境从源码构建：
    ```bash
-   git clone https://github.com/0DNANCY/agy-claude-style.git
-   cd agy-claude-style
+   git clone https://github.com/junjiemi23-ship-it/agy-claude-style-focus.git
+   cd agy-claude-style-focus
    npm run build:macos
    ```
    构建完成后会在项目根目录生成通用架构（`arm64` + `x86_64`）的 `AGY Claude Style.app` 与 `AGY-Claude-Style-v<version>-macOS-universal.dmg` 🦀。
@@ -259,8 +265,8 @@ AGY Claude Style 提供两种运行模式。**默认推荐「托管启动模式�
 
 1. 克隆仓库并准备配置文件（可选，若不创建 `config.json` 将自动使用内置默认配置）：
    ```bash
-   git clone https://github.com/0DNANCY/agy-claude-style.git
-   cd agy-claude-style
+   git clone https://github.com/junjiemi23-ship-it/agy-claude-style-focus.git
+   cd agy-claude-style-focus
    cp config.example.json config.json
    ```
 
@@ -309,7 +315,11 @@ AGY Claude Style 提供两种运行模式。**默认推荐「托管启动模式�
 | `mascot` | `'crab'` \| `'off'` | `'crab'` | 🦀 输入框右上角像素螃蟹挂件 `Clawd` |
 | `logoInk` | `'accent'` \| `'foreground'` | `'accent'` | ✒️ 首页 Antigravity Logo 线条色调 |
 | `inlineStats` | `boolean` | `true` | 🍩 启用内嵌会话统计与右下角剩余用量圆环 |
-| `ringMode` | `'context'` \| `'quota'` | `'context'` | 🔋 右下角圆环显示上下文剩余或模型配额剩余 |
+| `ringMode` | `'dual'` \| `'context'` \| `'quota'` | `'dual'` | 🔋 右下角圆环模式（默认 `dual` 外环上下文+内环配额双同心环；可选单环） |
+| `focusMode` | `boolean` | `false` | 🧘 深潜专注模式（`Alt+Shift+F`：静默波纹与轮次徽章，小螃蟹安静陪伴并禁飞自动流星） |
+| `sprintMinutes` | `'25'` \| `'45'` \| `'off'` | `'25'` | 🍅 底栏番茄冲刺计时胶囊时长（`Alt+Shift+P` 启停，达成召唤金色庆典流星） |
+| `meteorRide` | `'auto'` \| `'manual'` \| `'off'` | `'auto'` | 🌠 小螃蟹流星御风巡游模式（`auto` 闲置偶发 / `manual` 仅 `Alt+Shift+M` 触发 / `off` 关闭） |
+| `costGuard` | `boolean` | `true` | ⚡ 大草稿（≥4k tok）与单轮暴增（≥15k tok）防烧钱琥珀色预警条 |
 | `turnBadges` | `boolean` | `true` | 🏷️ 对话流每轮 AI 回复底部显示 Token 徽章 |
 | `hudTopBar` | `boolean` | `false` | 📏 输入框顶部上下文进度条 |
 | `hudBottomBar` | `boolean` | `false` | 📊 输入框底部详细 HUD 遥测栏（开启后即使在 `context` 模式也同步显示模型配额余量） |
@@ -343,13 +353,14 @@ AGY Claude Style 提供两种运行模式。**默认推荐「托管启动模式�
 ## 🗂️ 项目结构
 
 ```text
-agy-claude-style/
+agy-claude-style-focus/
 ├── .github/workflows/                 # GitHub Actions CI 测试与自动构建发布 Release 工作流
 │   ├── _build-and-test.yml            # 共享可复用工作流（统一版本解析、跨平台测试与产物命名）
 │   ├── ci.yml                         # PR / main 分支跨平台测试与编译验证
 │   └── release.yml                    # 推送 v* 标签或手动触发自动发布 Windows/macOS 安装包
 ├── CHANGELOG.md                       # 版本变更日志（Release 工作流自动抽取对应版本说明）
 ├── assets/                            # README 可爱像素螃蟹 Clawd 视觉插图资源
+├── focus-core.js                      # [v2.2.0 新增] 番茄冲刺计时器、三次抛物星轨御风引擎、空中许愿与全局快捷键解析
 ├── cdp.js                             # CDP 客户端、配置校验/原子写入、PID 归属校验、注入/轻量刷新表达式与 ensureAntigravityWithCdp 启动协调
 ├── inject.js                          # 单次注入、--managed 托管启动与 --watch 热更新监听进程（含 <2KB 配置刷新与设置绑定）
 ├── remove.js                          # 校验 PID 归属后停止守护/监听进程并清理恢复原生界面
@@ -428,6 +439,7 @@ npm run remove
 
 本项目在设计与实现过程中参考并使用了以下开源项目的灵感、样式及部分源码，特此声明并致谢 🌸：
 
+- **直接上游基座仓库**：[https://github.com/0DNANCY/agy-claude-style](https://github.com/0DNANCY/agy-claude-style)（MIT License）
 - **项目灵感来源及部分源码来源**：[https://github.com/Nwflower/dsh-claude-style](https://github.com/Nwflower/dsh-claude-style)
 - **Codex 思考强度滑杆样式**：[https://github.com/Microqian2th/dsh-codex-effort-slider](https://github.com/Microqian2th/dsh-codex-effort-slider)
 - **梁武峰思考强度滑杆样式**：[https://github.com/mobius/dsh-performance-slider](https://github.com/mobius/dsh-performance-slider)
